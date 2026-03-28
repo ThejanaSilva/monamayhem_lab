@@ -8,10 +8,281 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Mona Mayhem</title>
+		<title>Mona Mayhem – GitHub Contribution Battle Arena</title>
+		<style>
+			*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+			body {
+				font-family: system-ui, sans-serif;
+				background: #0d1117;
+				color: #c9d1d9;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				padding: 2rem 1rem;
+			}
+
+			header {
+				text-align: center;
+				margin-bottom: 2.5rem;
+			}
+
+			header h1 {
+				font-size: 2.5rem;
+				color: #f0f6fc;
+			}
+
+			header p {
+				margin-top: 0.5rem;
+				color: #8b949e;
+			}
+
+			.battle-form {
+				display: flex;
+				gap: 1rem;
+				align-items: flex-end;
+				flex-wrap: wrap;
+				justify-content: center;
+				margin-bottom: 2rem;
+			}
+
+			.player {
+				display: flex;
+				flex-direction: column;
+				gap: 0.4rem;
+			}
+
+			.player label {
+				font-size: 0.85rem;
+				color: #8b949e;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+
+			.player input {
+				padding: 0.55rem 0.9rem;
+				border: 1px solid #30363d;
+				border-radius: 6px;
+				background: #161b22;
+				color: #c9d1d9;
+				font-size: 1rem;
+				width: 200px;
+			}
+
+			.player input:focus {
+				outline: none;
+				border-color: #58a6ff;
+			}
+
+			.vs {
+				font-size: 1.4rem;
+				font-weight: bold;
+				color: #f85149;
+				padding-bottom: 0.4rem;
+			}
+
+			#battle-btn {
+				padding: 0.6rem 1.6rem;
+				background: #b91c1c;
+				color: #fff;
+				border: none;
+				border-radius: 6px;
+				font-size: 1rem;
+				cursor: pointer;
+			}
+
+			#battle-btn:hover:not(:disabled) {
+				background: #dc2626;
+			}
+
+			#battle-btn:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+			}
+
+			#results {
+				width: 100%;
+				max-width: 600px;
+			}
+
+			.result-card {
+				background: #161b22;
+				border: 1px solid #30363d;
+				border-radius: 8px;
+				padding: 1.25rem 1.5rem;
+			}
+
+			.result-card h2 {
+				font-size: 1.1rem;
+				color: #f0f6fc;
+				margin-bottom: 1rem;
+				border-bottom: 1px solid #30363d;
+				padding-bottom: 0.6rem;
+			}
+
+			.scores {
+				display: flex;
+				justify-content: space-around;
+				margin-bottom: 1rem;
+				gap: 1rem;
+			}
+
+			.score-block {
+				text-align: center;
+			}
+
+			.score-block .username {
+				font-weight: bold;
+				color: #58a6ff;
+				margin-bottom: 0.25rem;
+			}
+
+			.score-block .count {
+				font-size: 2rem;
+				font-weight: bold;
+				color: #f0f6fc;
+			}
+
+			.score-block .label {
+				font-size: 0.75rem;
+				color: #8b949e;
+			}
+
+			.winner-banner {
+				text-align: center;
+				font-size: 1rem;
+				font-weight: bold;
+				padding: 0.6rem;
+				border-radius: 6px;
+				margin-top: 0.5rem;
+			}
+
+			.winner-banner.player1 { background: #1f3b2b; color: #3fb950; }
+			.winner-banner.player2 { background: #1b2f4a; color: #58a6ff; }
+			.winner-banner.tie     { background: #2d2d1f; color: #e3b341; }
+
+			.error-msg {
+				color: #f85149;
+				font-size: 0.9rem;
+				margin-top: 0.75rem;
+				text-align: center;
+			}
+
+			.hidden { display: none; }
+		</style>
 	</head>
 	<body>
-		<h1>Mona Mayhem</h1>
-		<p>Welcome to Mona Mayhem! Time to build a GitHub Contribution Battle Arena.</p>
+		<header>
+			<h1>⚔️ Mona Mayhem</h1>
+			<p>GitHub Contribution Battle Arena</p>
+		</header>
+
+		<div class="battle-form">
+			<div class="player">
+				<label for="player1">Player 1</label>
+				<input id="player1" type="text" placeholder="GitHub username" autocomplete="off" />
+			</div>
+
+			<span class="vs">VS</span>
+
+			<div class="player">
+				<label for="player2">Player 2</label>
+				<input id="player2" type="text" placeholder="GitHub username" autocomplete="off" />
+			</div>
+
+			<button id="battle-btn">⚔️ Battle!</button>
+		</div>
+
+		<section id="results" class="hidden" aria-live="polite">
+			<div class="result-card">
+				<h2>Battle Results</h2>
+				<div class="scores">
+					<div class="score-block">
+						<div id="r-username1" class="username">—</div>
+						<div id="r-count1" class="count">—</div>
+						<div class="label">contributions</div>
+					</div>
+					<div class="score-block">
+						<div id="r-username2" class="username">—</div>
+						<div id="r-count2" class="count">—</div>
+						<div class="label">contributions</div>
+					</div>
+				</div>
+				<div id="winner-banner" class="winner-banner hidden"></div>
+				<div id="error-msg" class="error-msg hidden"></div>
+			</div>
+		</section>
+
+		<script>
+			const btn = document.getElementById('battle-btn') as HTMLButtonElement;
+			const resultsSection = document.getElementById('results')!;
+			const rUsername1 = document.getElementById('r-username1')!;
+			const rUsername2 = document.getElementById('r-username2')!;
+			const rCount1 = document.getElementById('r-count1')!;
+			const rCount2 = document.getElementById('r-count2')!;
+			const winnerBanner = document.getElementById('winner-banner')!;
+			const errorMsg = document.getElementById('error-msg')!;
+
+			btn.addEventListener('click', async () => {
+				const p1 = (document.getElementById('player1') as HTMLInputElement).value.trim();
+				const p2 = (document.getElementById('player2') as HTMLInputElement).value.trim();
+
+				if (!p1 || !p2) {
+					alert('Please enter both GitHub usernames.');
+					return;
+				}
+
+				// Reset UI
+				btn.disabled = true;
+				btn.textContent = 'Battling…';
+				resultsSection.classList.remove('hidden');
+				winnerBanner.classList.add('hidden');
+				errorMsg.classList.add('hidden');
+				rUsername1.textContent = p1;
+				rUsername2.textContent = p2;
+				rCount1.textContent = '…';
+				rCount2.textContent = '…';
+
+				try {
+					const [res1, res2] = await Promise.all([
+						fetch(`/api/contributions/${encodeURIComponent(p1)}`),
+						fetch(`/api/contributions/${encodeURIComponent(p2)}`),
+					]);
+
+					const data1 = await res1.json();
+					const data2 = await res2.json();
+
+					const count1 = typeof data1.contributions === 'number' ? data1.contributions : null;
+					const count2 = typeof data2.contributions === 'number' ? data2.contributions : null;
+
+					rCount1.textContent = count1 !== null ? String(count1) : 'N/A';
+					rCount2.textContent = count2 !== null ? String(count2) : 'N/A';
+
+					if (count1 !== null && count2 !== null) {
+						winnerBanner.classList.remove('hidden', 'player1', 'player2', 'tie');
+						if (count1 > count2) {
+							winnerBanner.classList.add('player1');
+							winnerBanner.textContent = `🏆 ${p1} wins!`;
+						} else if (count2 > count1) {
+							winnerBanner.classList.add('player2');
+							winnerBanner.textContent = `🏆 ${p2} wins!`;
+						} else {
+							winnerBanner.classList.add('tie');
+							winnerBanner.textContent = "🤝 It's a tie!";
+						}
+					} else {
+						errorMsg.classList.remove('hidden');
+						errorMsg.textContent = 'Could not fetch contribution data. The API is not yet implemented.';
+					}
+				} catch {
+					errorMsg.classList.remove('hidden');
+					errorMsg.textContent = 'An error occurred while fetching data.';
+				} finally {
+					btn.disabled = false;
+					btn.textContent = '⚔️ Battle!';
+				}
+			});
+		</script>
 	</body>
 </html>
